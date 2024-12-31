@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js"></script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我们的世界</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #0f0d0d; /* Changed background to black */
+            position: relative;
+            z-index: 1; /* Ensure that content appears in front */
+            color: white;
+        }
+
+        /* Removed Heart-shaped background div */
+        /* .heart-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 0, 0, 0.3); /* Semi-transparent red */
+            clip-path: polygon(50% 0%, 0% 38%, 0% 100%, 50% 75%, 100% 100%, 100% 38%, 50% 0%);
+            z-index: -1; /* Make sure it stays behind the content */
+        } */
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            color: white;
+            font-weight: 600;
+        }
+
+        section {
+            margin: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        #image-gallery {
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #image-gallery img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 8px;
+            transition: transform 0.5s ease;
+        }
+
+        .carousel-controls {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .carousel-controls button {
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            font-size: 20px;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .carousel-controls button:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .image-upload {
+            margin-bottom: 20px;
+        }
+
+        .image-upload input {
+            margin-top: 10px;
+        }
+
+        #wish-message {
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            margin-top: 20px;
+            font-weight: 600;
+            background-color: rgba(255, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .diary-section {
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        .diary-status {
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <h1>ourrr world babeee</h1>
+    </header>
+
+    <div id="wish-message"></div> <!-- Wish message for specific days -->
+
+    <section id="countdown">
+        <h2>倒数 31st December 2025</h2>
+        <div id="timer"></div>
+    </section>
+
+    <section id="daily-question">
+        <h2>每天考考！ <span id="emoji"></span></h2>
+        <p id="question"></p>
+        <input type="number" id="answer" placeholder="给你5秒！">
+        <button onclick="checkAnswer()">不要犹豫 快交！</button>
+        <p id="result"></p>
+    </section>
+
+    <!-- Daily Diary Section -->
+    <section id="daily-diary">
+        <h2>快和我说今天做了什么！！</h2>
+        <textarea id="diary-entry" placeholder="说说来！我要听" rows="6" cols="50"></textarea>
+        <br>
+        <button onclick="saveDiary()">保存给我嘛</button>
+        <p id="diary-status"></p>
+    </section>
+
+    <!-- View Diary Section -->
+    <section id="view-diary">
+        <h2>看回你都写了什么？！</h2>
+        <button onclick="viewDiary()">查看日记</button>
+        <div id="saved-diary"></div>
+    </section>
+
+    
+    <script>
+        // Countdown Timer
+        const countdownDate = new Date("December 31, 2025 00:00:00 GMT+0800").getTime();
+        const timer = document.getElementById("timer");
+
+        setInterval(() => {
+            const now = new Date().getTime();
+            const distance = countdownDate - now;
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            timer.innerHTML = `倒计时: ${days}天 ${hours}小时 ${minutes}分钟 ${seconds}秒`;
+
+            if (distance < 0) {
+                clearInterval();
+                timer.innerHTML = "已过期";
+            }
+        }, 1000);
+
+        // Daily Question Game
+        const dailyQuestion = (Math.floor(Math.random() * 9999)) + " / 2 = ?";
+        document.getElementById("question").innerText = dailyQuestion;
+
+        function checkAnswer() {
+            const answer = document.getElementById("answer").value;
+            const correctAnswer = dailyQuestion.split(" / 2 = ?")[0] / 2;
+            const result = document.getElementById("result");
+            result.innerText = (answer == correctAnswer) ? "对啦！你真棒!" : `再想想嘛! 正确答案是：${correctAnswer}.`;
+        }
+
+        // Save Daily Diary Entry
+        function saveDiary() {
+            const diaryEntry = document.getElementById("diary-entry").value;
+            if (diaryEntry.trim() === "") {
+                document.getElementById("diary-status").innerText = "喂！写点东西吧.";
+                return;
+            }
+            // Save to localStorage
+            localStorage.setItem("dailyDiary", diaryEntry);
+            document.getElementById("diary-status").innerText = "偷偷记录了!";
+        }
+
+        // Load saved diary entry on page load
+        window.onload = function() {
+            const savedDiary = localStorage.getItem("dailyDiary");
+            if (savedDiary) {
+                document.getElementById("diary-entry").value = savedDiary;
+            }
+
+            // Display wish message for specific dates
+            const today = new Date();
+            const month = today.getMonth() + 1; // Months are 0-indexed
+            const day = today.getDate();
+            const wishMessage = document.getElementById("wish-message");
+
+            const emojis = ["🎉", "🎁", "💖", "🌹", "💫", "🎶", "🌟", "🍀"];
+            const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+
+            // Special day wishes
+            if (month === 2 && day === 14) {
+                wishMessage.innerHTML = `情人节快乐！💖！${randomEmoji}`;
+            } else if (month === 12 && day === 25) {
+                wishMessage.innerHTML = `又是圣诞节！🎄！${randomEmoji}`;
+            } else {
+                wishMessage.innerHTML = `天天都是好天噢！babe要充满正能量！${randomEmoji}`;
+            }
+        };
+
+        // View Saved Diary
+        function viewDiary() {
+            const savedDiary = localStorage.getItem("dailyDiary");
+            const savedDiaryDiv = document.getElementById("saved-diary");
+
+            if (savedDiary) {
+                savedDiaryDiv.innerHTML = `<p><strong>是你写过的东西嘛：</strong></p><p>${savedDiary}</p>`;
+            } else {
+                savedDiaryDiv.innerHTML = "<p>嗯？！没有找到。请先保存一个！</p>";
+            }
+        }
+    </script>
+</body>
+</html>
